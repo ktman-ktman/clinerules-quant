@@ -26,9 +26,9 @@ BLOOMBERG_API_KEY = require_env("BLOOMBERG_API_KEY")
 # 誤
 query = f"SELECT * FROM prices WHERE ticker = '{ticker}'"
 
-# 正
-query = "SELECT * FROM prices WHERE ticker = %(ticker)s"
-df = pd.read_sql(query, conn, params={"ticker": ticker})
+# 正: バインドパラメータはドライバ/SQLAlchemy側で解決させる
+stmt = sqlalchemy.text("SELECT * FROM prices WHERE ticker = :ticker")
+df = pl.read_database(stmt, connection=conn, execute_options={"parameters": {"ticker": ticker}})
 ```
 
 ## 静的セキュリティスキャン

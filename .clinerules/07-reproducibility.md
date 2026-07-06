@@ -54,8 +54,8 @@ metadata = {
 
 ```python
 # 誤
-df = pd.read_parquet("/home/taro/data/prices.parquet")
+df = pl.read_parquet("/home/taro/data/prices.parquet")
 
 # 正
-df = pd.read_parquet(config.data_dir / "prices.parquet")
+df = pl.read_parquet(config.data_dir / "prices.parquet")
 ```

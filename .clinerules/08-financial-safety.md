@@ -10,12 +10,14 @@
 
 ```python
 # 誤: 当日リターンを当日シグナルに使用(ルックアヘッド)
-df["signal"] = df["ret"].rolling(20).mean()
-df["pnl"] = df["signal"] * df["ret"]
+df = df.with_columns(pl.col("ret").rolling_mean(20).alias("signal"))
+df = df.with_columns((pl.col("signal") * pl.col("ret")).alias("pnl"))
 
 # 正: シグナルは前日までの情報で構築し、翌日のリターンに適用
-df["signal"] = df["ret"].rolling(20).mean().shift(1)  # 決算発表等の反映遅延も考慮してラグを決める
-df["pnl"] = df["signal"] * df["ret"]
+df = df.with_columns(
+    pl.col("ret").rolling_mean(20).shift(1).alias("signal")  # 決算発表等の反映遅延も考慮してラグを決める
+)
+df = df.with_columns((pl.col("signal") * pl.col("ret")).alias("pnl"))
 ```
 
 - ローリング標準化・fit はエクスパンディング/ローリングウィンドウで「その時点まで」のデータのみ使う
@@ -29,21 +31,21 @@ df["pnl"] = df["signal"] * df["ret"]
 ## 日付・カレンダー処理
 
 - タイムスタンプはタイムゾーンを明示する(naive datetime と aware datetime を混在させない)。日次データでも取引所のローカル日付である旨をドキュメント化する
-- 営業日計算はカレンダーライブラリ(取引所カレンダー)を使う。`pd.date_range(freq="D")` や「土日を除くだけ」で代用しない(祝日・臨時休場を落とす)
+- 営業日計算はカレンダーライブラリ(取引所カレンダー)を使う。`pl.date_range(interval="1d")` や「土日を除くだけ」で代用しない(祝日・臨時休場を落とす)
 - 複数市場をまたぐ場合、カレンダーの不一致(休場日ずれ・時差)による欠損・ルックアヘッドに注意する
 
 ## リターン計算の規約
 
 - 単純リターンと対数リターンをプロジェクト内で混在させない。使う定義をプロジェクトの規約として明記する
-- 累積は定義に合わせる: 単純リターンは積(`(1+r).prod()`)、対数リターンは和
+- 累積は定義に合わせる: 単純リターンは積(`(1+r).product()`)、対数リターンは和
 - 配当・分割調整の有無を必ず明示する(調整済み価格系列を使っているか)
 - 年率換算の係数(252 / 365 / 12)は定数として一元管理する
 
 ```python
 TRADING_DAYS_PER_YEAR = 252
 
-def annualize_return(daily_simple_returns: pd.Series) -> float:
-    total = (1 + daily_simple_returns).prod()
+def annualize_return(daily_simple_returns: pl.Series) -> float:
+    total = (1 + daily_simple_returns).product()
     n = len(daily_simple_returns)
     return total ** (TRADING_DAYS_PER_YEAR / n) - 1
 ```

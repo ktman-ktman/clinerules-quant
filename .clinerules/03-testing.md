@@ -18,7 +18,7 @@ Arrange(準備)- Act(実行)- Assert(検証)を明確に分ける。
 ```python
 def test_sharpe_is_zero_for_constant_returns():
     # Arrange
-    returns = pd.Series([0.01] * 252)
+    returns = pl.Series([0.01] * 252)
 
     # Act
     sharpe = compute_sharpe(returns)
