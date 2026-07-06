@@ -3,19 +3,20 @@
 ## シークレット管理
 
 - APIキー・パスワード・トークン・DB接続文字列をソースコードにハードコードしない
-- 環境変数または秘密管理サービスから読み込む(ローカルは `.env` + python-dotenv、`.env` は必ず `.gitignore` に入れる)
+- 環境変数または秘密管理サービスから読み込む(ローカルは `.env`、`.env` は必ず `.gitignore` に入れる)
 - 必須シークレットは起動時に検証し、欠けていれば即座に失敗させる
+- 読み込みは `pydantic-settings` の `BaseSettings` に統一する。型アノテーションから自動でパース・バリデーションされ、必須項目の欠落は起動時に `ValidationError` として検出できる。`os.environ.get()` を直接呼ぶ箇所は増やさず、設定オブジェクト経由でアクセスする
 
 ```python
-import os
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-def require_env(name: str) -> str:
-    value = os.environ.get(name)
-    if not value:
-        raise RuntimeError(f"必須環境変数 {name} が設定されていません")
-    return value
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
 
-BLOOMBERG_API_KEY = require_env("BLOOMBERG_API_KEY")
+    bloomberg_api_key: str = Field(...)
+
+settings = Settings()  # 必須項目が欠けていれば起動時に ValidationError
 ```
 
 ## SQL
